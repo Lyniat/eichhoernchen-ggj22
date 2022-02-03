@@ -1,0 +1,9 @@
+{
+  "actions" : {
+    "build" : {
+      "enabled" : true,
+      "script" : "#!\/bin\/sh\ncd ..\n.\/dragonruby-publish --only-package game"
+    }
+  },
+  "identifier" : "0C90BFE1-D898-4740-8941-C6B117932C82"
+}
