@@ -44,6 +44,13 @@ def get_bark_spr(id)
   "sprites/bark_#{id}.png"
 end
 
+def get_bark(x,y)
+  is_sin = (Math.sin(y/3) * Constants::TREE_WIDTH/4 + Constants::TREE_WIDTH/2).round == x
+  is_mod = y % 2 == 1
+  is_rnd = Random.rand(y+1) == 1
+  (is_sin && is_mod) || is_rnd ? Tiles::BARK_HOLE : Tiles::BARK
+end
+
 def create_tree
   width = Constants::TREE_WIDTH
   height = Constants::TREE_HEIGHT
@@ -58,7 +65,7 @@ def create_tree
       elsif x == width - 1
         🌳[x][y] = Tiles::BARK_RIGHT
       else
-        🌳[x][y] = Random.rand(6) == 1 ? Tiles::BARK_HOLE : Tiles::BARK
+        🌳[x][y] = get_bark(x,y)
       end
     end
   end
@@ -94,6 +101,8 @@ def tick args
     }
     args.audio[:main] = music
   end
+
+  args.outputs.background_color = [68,173,212]
 
   @args = args
   @out = args.outputs
@@ -132,7 +141,7 @@ def scene_how_to
 
   i = 0
   how_to_one.each do |c|
-    @labels << [500, Constants::HEIGHT - 35 * i - 250, c, 20, 1, 0, 0, 0, 255, Resources::FONT ]
+    @labels << [500, Constants::HEIGHT - 35 * i - 250, c, 20, 1, 50, 50, 50, 255, Resources::FONT ]
     i += 1
   end
 
@@ -140,7 +149,7 @@ def scene_how_to
 
   i = 0
   how_to_two.each do |c|
-    @labels << [Constants::WIDTH - 500, Constants::HEIGHT - 35 * i - 250, c, 20, 1, 0, 0, 0, 255, Resources::FONT ]
+    @labels << [Constants::WIDTH - 500, Constants::HEIGHT - 35 * i - 250, c, 20, 1, 50, 50, 50, 255, Resources::FONT ]
     i += 1
   end
 
@@ -169,11 +178,11 @@ def scene_menu
 
   i = 0
   credits.each do |c|
-    @labels << [Constants::WIDTH - 40, Constants::HEIGHT - 35 * i, c, 20, 2, 0, 0, 0, 255, Resources::FONT ]
+    @labels << [Constants::WIDTH - 40, Constants::HEIGHT - 35 * i, c, 20, 2, 50, 50, 50, 255, Resources::FONT ]
     i += 1
   end
 
-  @labels << [40, Constants::HEIGHT, 'PRESS SPACE TO START', 20, 0, 0, 0, 0, 255, Resources::FONT ]
+  @labels << [40, Constants::HEIGHT, 'PRESS SPACE TO START', 20, 0, 50, 50, 50, 255, Resources::FONT ]
 
   #input
 
