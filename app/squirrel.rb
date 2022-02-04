@@ -3,6 +3,7 @@ class Squirrel
   def initialize(args,cam,🌳,x, y,size)
     @sprites = args.outputs.sprites
     @lines = args.outputs.lines
+    @args = args
     @camera = cam
     @🌳 = 🌳
     @input = args.inputs
@@ -21,6 +22,14 @@ class Squirrel
     @hand_left_pos_y = 0
     @hand_right_pos_x = 0
     @hand_right_pos_y = 0
+  end
+
+  def play_sound_hit
+    @args.outputs.sounds << "#{Resources::SND_HIT}#{Random.rand(3)}.wav"
+  end
+
+  def play_sound_no
+    @args.outputs.sounds << "#{Resources::SND_NO}#{Random.rand(3)}.wav"
   end
 
   def offset
@@ -128,6 +137,7 @@ class Squirrel
         if @left_arm_length > Constants::MAX_ARM_LENGTH
           @left_arm_length = Constants::MAX_ARM_LENGTH
           @moving_left_backward = true
+          play_sound_no
         end
       else
         @left_arm_length -= Constants::ARM_SPEED
@@ -147,6 +157,7 @@ class Squirrel
         if @right_arm_length > Constants::MAX_ARM_LENGTH
           @right_arm_length = Constants::MAX_ARM_LENGTH
           @moving_right_backward = true
+          play_sound_no
         end
       else
         @right_arm_length -= Constants::ARM_SPEED
@@ -163,6 +174,7 @@ class Squirrel
 
   def found_hole_left
     if !@moving_left_backward && @moving_left_hand
+      play_sound_hit
       @moving_left_backward = true
       dir_x, dir_y = get_rot(@rot_left)
 
@@ -177,6 +189,7 @@ class Squirrel
 
   def found_hole_right
     if !@moving_right_backward && @moving_right_hand
+      play_sound_hit
       @moving_right_backward = true
       dir_x, dir_y = get_rot(@rot_right)
 
