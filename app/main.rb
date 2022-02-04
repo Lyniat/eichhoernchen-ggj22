@@ -2,7 +2,7 @@ require 'app/squirrel.rb'
 
 class State
   MENU = 0
-  STARTING = 1
+  HOW_TO = 1
   PLAYING = 2
 end
 
@@ -71,6 +71,13 @@ def cam_offset_y
   Constants::HEIGHT/2 - @camera.y
 end
 
+def reset
+  @🌳 = nil
+  @🐿 = nil
+
+  @game_state ||= State::MENU
+end
+
 def tick args
   @args = args
   @out = args.outputs
@@ -87,10 +94,43 @@ def tick args
   case @game_state
   when State::MENU
     scene_menu
+  when State::HOW_TO
+    scene_how_to
   when State::PLAYING
     scene_playing
+    if @input.keyboard.key_down.backspace
+      reset
+    end
+    if @input.keyboard.key_down.escape
+      reset
+      @game_state = State::MENU
+    end
   end
 
+end
+
+def scene_how_to
+  draw_grass
+
+  how_to_one = ['Player One:','W','A','D']
+
+  i = 0
+  how_to_one.each do |c|
+    @labels << [500, Constants::HEIGHT - 35 * i - 250, c, 20, 1, 0, 0, 0, 255, Resources::FONT ]
+    i += 1
+  end
+
+  how_to_two = ['Player Two:','UP','LEFT','RIGHT']
+
+  i = 0
+  how_to_two.each do |c|
+    @labels << [Constants::WIDTH - 500, Constants::HEIGHT - 35 * i - 250, c, 20, 1, 0, 0, 0, 255, Resources::FONT ]
+    i += 1
+  end
+
+  if @input.keyboard.key_down.space
+    @game_state = State::PLAYING
+  end
 end
 
 def draw_grass
@@ -117,10 +157,12 @@ def scene_menu
     i += 1
   end
 
+  @labels << [40, Constants::HEIGHT, 'PRESS SPACE TO START', 20, 0, 0, 0, 0, 255, Resources::FONT ]
+
   #input
 
   if @input.keyboard.key_down.space
-    @game_state = State::PLAYING
+    @game_state = State::HOW_TO
   end
 end
 
