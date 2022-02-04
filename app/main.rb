@@ -1,3 +1,5 @@
+require 'app/squirrel.rb'
+
 class State
   MENU = 0
   STARTING = 1
@@ -9,15 +11,23 @@ class Resources
   SPR_SQUIRREL_FRONT = 'sprites/squirrel_front.png'
   SPR_GROUND = 'sprites/ground.png'
   SPR_SQUIRREL = 'sprites/squirrel.png'
+  SPR_HAND = 'sprites/hand.png'
   FONT = 'fonts/shpinscher.ttf'
 end
 
 class Constants
   WIDTH = 1280
   HEIGHT = 720
+  SQUIRREL_SIZE = 3
   TREE_WIDTH = 12
   TREE_HEIGHT = 60
   TILE_SIZE = 64
+  DEG_RAD = (3.14159265359 * 2) / 360
+  RAD = 30
+  GRAVITY = 9.81
+  MAX_SPEED = 20
+  MAX_ARM_LENGTH = 7.5
+  ARM_SPEED = 0.5
 end
 
 class Tiles
@@ -25,44 +35,6 @@ class Tiles
   BARK = 1
   BARK_HOLE = 2
   BARK_RIGHT = 3
-end
-
-class Squirrel
-  attr_reader :x,:y
-  def initialize(args,cam,x, y,size)
-    @sprites = args.outputs.sprites
-    @camera = cam
-    @input = args.inputs
-    @x = x
-    @y = y
-    @size = size
-  end
-
-  def offset
-    [Constants::WIDTH/2 - @camera.x, Constants::HEIGHT/2 - @camera.y]
-  end
-
-  def width
-    38 * @size
-  end
-
-  def height
-    40 * @size
-  end
-
-  def draw
-    offset_x, offset_y = offset
-    @sprites << [@x + offset_x, @y + offset_y, 38 * @size, 40 * @size , Resources::SPR_SQUIRREL]
-  end
-
-  # unnecessary
-  def test_move
-    speed = 4
-    direction_x = @input.keyboard.key_held.left ? -1 : (@input.keyboard.key_held.right ? 1 : 0)
-    direction_y = @input.keyboard.key_held.down ? -1 : (@input.keyboard.key_held.up ? 1 : 0)
-    @x += direction_x * speed
-    @y += direction_y * speed
-  end
 end
 
 def get_bark_spr(id)
@@ -83,7 +55,7 @@ def create_tree
       elsif x == width - 1
         🌳[x][y] = Tiles::BARK_RIGHT
       else
-        🌳[x][y] = Random.rand(10) == 1 ? Tiles::BARK_HOLE : Tiles::BARK
+        🌳[x][y] = Random.rand(6) == 1 ? Tiles::BARK_HOLE : Tiles::BARK
       end
     end
   end
@@ -106,15 +78,9 @@ def tick args
   @ticks = args.state.tick_count
   @labels = args.outputs.labels
   @input = args.inputs
-
   @camera ||= { x: Constants::WIDTH/2, y: Constants::HEIGHT/2}
-
-  # args.outputs.labels  << [640, 500, 'Hello World!', 5, 1]
-  # args.outputs.labels  << [640, 460, 'Go to docs/docs.html and read it!', 5, 1]
-  # args.outputs.labels  << [640, 420, 'Join the Discord! http://discord.dragonruby.org', 5, 1]
-  # args.outputs.sprites << [576, 280, 128, 101, 'dragonruby.png']
   @🌳 ||= create_tree
-  @🐿 ||= Squirrel.new(@args,@camera,Constants::WIDTH/2,Constants::HEIGHT/2,3)
+  @🐿 ||= Squirrel.new(@args,@camera,@🌳,Constants::WIDTH/2,Constants::HEIGHT/2,Constants::SQUIRREL_SIZE)
 
   @game_state ||= State::MENU
 
@@ -129,7 +95,7 @@ end
 
 def draw_grass
   ground_scale = 4
-  (0..4).each do |i|
+  (-4..8).each do |i|
     @sprites << [i * 64 * ground_scale + cam_offset_x, cam_offset_y, 64 * ground_scale, 64 * ground_scale, Resources::SPR_GROUND]
   end
 end
@@ -168,8 +134,8 @@ def cam_follow_player
 
   if @camera.y > @🐿.y + offset
     @camera.y = @🐿.y + offset
-  elsif @camera.y < @🐿.y - offset
-    @camera.y = @🐿.y - offset
+  elsif @camera.y < @🐿.y
+    @camera.y = @🐿.y
   end
 end
 
@@ -181,19 +147,50 @@ end
 
 def scene_playing
 
-  @🐿.test_move
+  # @🐿.test_move
+  @🐿.hand_move
+  @🐿.update_physics
   cam_follow_player
   limit
 
   mid_offset = Constants::WIDTH / 2 - (Constants::TREE_WIDTH * Constants::TILE_SIZE) / 2
-  # draw tree
+  # draw tree ( and btw. check for holes :D )
   (0...Constants::TREE_WIDTH).each do |x|
     (0...Constants::TREE_HEIGHT).each do |y|
-      @sprites << [x * Constants::TILE_SIZE + mid_offset + cam_offset_x,
-                   y * Constants::TILE_SIZE + cam_offset_y,
+      tree_x = x * Constants::TILE_SIZE + mid_offset + cam_offset_x
+      tree_y = y * Constants::TILE_SIZE + cam_offset_y
+      @sprites << [tree_x,
+                   tree_y,
                    Constants::TILE_SIZE,
                    Constants::TILE_SIZE,
                    get_bark_spr(@🌳[x][y])]
+
+      if @🌳[x][y] == Tiles::BARK_HOLE
+        # midpoint
+        tree_x += Constants::TILE_SIZE/2
+        tree_y += Constants::TILE_SIZE/2
+
+        left_x, left_y = @🐿.get_hand_left
+        # midpoint
+        left_x += Constants::SQUIRREL_SIZE * 6
+        left_y += Constants::SQUIRREL_SIZE * 6
+
+        dist_l = Math.sqrt((tree_x-left_x)**2 + (tree_y-left_y)**2)
+
+        right_x, right_y = @🐿.get_hand_right
+        # midpoint
+        right_x += Constants::SQUIRREL_SIZE * 6
+        right_y += Constants::SQUIRREL_SIZE * 6
+        dist_r = Math.sqrt((tree_x-right_x)**2 + (tree_y-right_y)**2)
+
+        if dist_l < Constants::TILE_SIZE/2
+          @🐿.found_hole_left
+        end
+
+        if dist_r < Constants::TILE_SIZE/2
+          @🐿.found_hole_right
+        end
+      end
     end
   end
 
