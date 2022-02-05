@@ -15,6 +15,7 @@ class Resources
   SPR_CROWN_LEFT = 'sprites/crown_left.png'
   SPR_CROWN_MID = 'sprites/crown_mid.png'
   SPR_CROWN_RIGHT = 'sprites/crown_right.png'
+  SPR_CLOUD = 'sprites/cloud.png'
   FONT = 'fonts/shpinscher.ttf'
   SND_HIT = 'sounds/hit_'
   SND_NO = 'sounds/no_'
@@ -55,6 +56,34 @@ def get_bark(x,y)
   (is_sin && is_mod) || is_rnd ? Tiles::BARK_HOLE : Tiles::BARK
 end
 
+def create_clouds
+  ☁️ = []
+  min_y = (Constants::TREE_HEIGHT / 2).to_i
+  max_y = Constants::TREE_HEIGHT
+
+  (min_y...max_y).each do |i|
+    if i% 2 == 0
+      r = Random.rand(Constants::TREE_WIDTH*1.5) - Constants::TREE_WIDTH/6
+      a = Random.rand(255)
+      c = {x: r, y: i, a: a}
+      ☁️ << c
+    end
+  end
+  ☁️
+end
+
+def mid_offset
+  Constants::WIDTH / 2 - (Constants::TREE_WIDTH * Constants::TILE_SIZE) / 2
+end
+
+def cloud_min_x
+  (mid_offset - Constants::TREE_WIDTH).to_i
+end
+
+def cloud_max_x
+  (mid_offset + Constants::TREE_WIDTH).to_i
+end
+
 def create_tree
   width = Constants::TREE_WIDTH
   height = Constants::TREE_HEIGHT
@@ -88,6 +117,7 @@ end
 def reset
   @🌳 = nil
   @🐿 = nil
+  @☁️ = nil
 
   @game_state ||= State::MENU
 end
@@ -117,6 +147,7 @@ def tick args
   @camera ||= { x: Constants::WIDTH/2, y: Constants::HEIGHT/2}
   @🌳 ||= create_tree
   @🐿 ||= Squirrel.new(@args,@camera,@🌳,Constants::WIDTH/2,Constants::HEIGHT/2,Constants::SQUIRREL_SIZE)
+  @☁️ ||= create_clouds
 
   @game_state ||= State::MENU
 
@@ -224,8 +255,6 @@ def scene_playing
   cam_follow_player
   limit
 
-  mid_offset = Constants::WIDTH / 2 - (Constants::TREE_WIDTH * Constants::TILE_SIZE) / 2
-
   # draw tree crown
   (-1..Constants::TREE_WIDTH).each do |x|
     y = Constants::TREE_HEIGHT
@@ -288,5 +317,17 @@ def scene_playing
 
   draw_grass
 
-  # @camera.y += 0.3
+  draw_clouds
+end
+
+def draw_clouds
+  @☁️.each do |c|
+    cloud_x = c.x * Constants::TILE_SIZE + mid_offset + cam_offset_x
+    cloud_y = c.y * Constants::TILE_SIZE + cam_offset_y
+    @sprites << [cloud_x,
+                 cloud_y,
+                 Constants::TILE_SIZE * 4,
+                 Constants::TILE_SIZE * 4,
+                 Resources::SPR_CLOUD]
+  end
 end

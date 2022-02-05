@@ -83,8 +83,8 @@ class Squirrel
 
   def update_physics
     @speed_y -= Constants::GRAVITY/60
-    if @speed_y > Constants::MAX_SPEED
-      @speed_y = Constants::MAX_SPEED
+    if @speed_y > Constants::MAX_SPEED/2
+      @speed_y = Constants::MAX_SPEED/2
     elsif @speed_y < -Constants::MAX_SPEED
       @speed_y = -Constants::MAX_SPEED
     end
@@ -183,7 +183,7 @@ class Squirrel
       end
 
       @speed_x += dir_x * 1
-      @speed_y += dir_y * 0.5
+      @speed_y += dir_y * 0.4
     end
   end
 
@@ -198,7 +198,7 @@ class Squirrel
       end
 
       @speed_x += dir_x * 1
-      @speed_y += dir_y * 0.5
+      @speed_y += dir_y * 0.4
     end
   end
 
