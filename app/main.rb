@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'app/squirrel.rb'
 
 class State
@@ -46,7 +48,7 @@ class Constants
   MAX_SPEED = 20
   MAX_ARM_LENGTH = 7.5
   ARM_SPEED = 0.5
-  EASY_MODE = true # TODO: Remove this for publishing
+  EASY_MODE = false # TODO: Remove this for publishing
 end
 
 class Tiles
@@ -56,10 +58,10 @@ class Tiles
   BARK_RIGHT = 3
 end
 
-def get_bark(x,y)
-  is_sin = (Math.sin(y/3) * Constants::TREE_WIDTH/4 + Constants::TREE_WIDTH/2).round == x
-  is_mod = y % 2 == 1
-  is_rnd = Constants::EASY_MODE ? Random.rand(5) == 1 : Random.rand(y+1) == 1
+def get_bark(x, y)
+  is_sin = (Math.sin(y / 3) * Constants::TREE_WIDTH / 4 + Constants::TREE_WIDTH / 2).round == x
+  is_mod = y.odd?
+  is_rnd = Constants::EASY_MODE ? Random.rand(5) == 1 : Random.rand(y + 1) == 1
   (is_sin && is_mod) || is_rnd ? Tiles::BARK_HOLE : Tiles::BARK
 end
 
@@ -69,12 +71,12 @@ def create_clouds
   max_y = Constants::TREE_HEIGHT
 
   (min_y...max_y).each do |i|
-    if i% 2 == 0
-      r = Random.rand(Constants::TREE_WIDTH*1.5) - Constants::TREE_WIDTH/6
-      a = Random.rand(255)
-      c = {x: r, y: i, a: a}
-      ☁️ << c
-    end
+    next unless i.even?
+
+    r = Random.rand(Constants::TREE_WIDTH * 1.5) - Constants::TREE_WIDTH / 6
+    a = Random.rand(255)
+    c = { x: r, y: i, a: a }
+    ☁️ << c
   end
   ☁️
 end
@@ -100,13 +102,14 @@ def create_tree
   (0...width).each do |x|
     🌳[x] = []
     (0...height).each do |y|
-      if x == 0
-        🌳[x][y] = Tiles::BARK_LEFT
-      elsif x == width - 1
-        🌳[x][y] = Tiles::BARK_RIGHT
-      else
-        🌳[x][y] = get_bark(x,y)
-      end
+      🌳[x][y] = case x
+                when 0
+                  Tiles::BARK_LEFT
+                when width - 1
+                  Tiles::BARK_RIGHT
+                else
+                  get_bark(x, y)
+                end
     end
   end
 
@@ -114,11 +117,11 @@ def create_tree
 end
 
 def cam_offset_x
-  Constants::WIDTH/2 - @camera.x
+  Constants::WIDTH / 2 - @camera.x
 end
 
 def cam_offset_y
-  Constants::HEIGHT/2 - @camera.y
+  Constants::HEIGHT / 2 - @camera.y
 end
 
 def reset
@@ -132,21 +135,21 @@ def reset
   @played_sound = false
 end
 
-def tick args
+def tick(args)
   # start music
-  if args.state.tick_count == 0
+  if args.state.tick_count.zero?
     music = {
       input: Resources::MUSIC,  # Filename
       x: 0.0, y: 0.0, z: 0.0,   # Relative position to the listener, x, y, z from -1.0 to 1.0
       gain: 0.2,                # Volume (0.0 to 1.0)
       pitch: 1.0,               # Pitch of the sound (1.0 = original pitch)
-      paused: false,           # Set to true to pause the sound at the current playback position
-      looping: true,           # Set to true to loop the sound/music until you stop it
+      paused: false, # Set to true to pause the sound at the current playback position
+      looping: true # Set to true to loop the sound/music until you stop it
     }
     args.audio[:main] = music
   end
 
-  args.outputs.background_color = [68,173,212]
+  args.outputs.background_color = [68, 173, 212]
 
   @args = args
   @out = args.outputs
@@ -154,9 +157,9 @@ def tick args
   @ticks = args.state.tick_count
   @labels = args.outputs.labels
   @input = args.inputs
-  @camera ||= { x: Constants::WIDTH/2, y: Constants::HEIGHT/2}
+  @camera ||= { x: Constants::WIDTH / 2, y: Constants::HEIGHT / 2 }
   @🌳 ||= create_tree
-  @🐿 ||= Squirrel.new(@args,@camera,@🌳,Constants::WIDTH/2,Constants::HEIGHT/2,Constants::SQUIRREL_SIZE)
+  @🐿 ||= Squirrel.new(@args, @camera, @🌳, Constants::WIDTH / 2, Constants::HEIGHT / 2, Constants::SQUIRREL_SIZE)
   @☁️ ||= create_clouds
 
   @game_state ||= State::MENU
@@ -170,72 +173,66 @@ def tick args
     scene_how_to
   when State::PLAYING
     scene_playing
-    if @input.keyboard.key_down.backspace
-      reset
-    end
+    reset if @input.keyboard.key_down.backspace
     if @input.keyboard.key_down.escape
       reset
       @game_state = State::MENU
     end
   end
-
 end
 
 def scene_how_to
   draw_grass
 
-  how_to_one = ['Player One:','W','A','D']
+  how_to_one = ['Player One:', 'W', 'A', 'D']
 
   i = 0
   how_to_one.each do |c|
-    @labels << [500, Constants::HEIGHT - 35 * i - 250, c, 20, 1, 50, 50, 50, 255, Resources::FONT ]
+    @labels << [500, Constants::HEIGHT - 35 * i - 250, c, 20, 1, 50, 50, 50, 255, Resources::FONT]
     i += 1
   end
 
-  how_to_two = ['Player Two:','UP','LEFT','RIGHT']
+  how_to_two = ['Player Two:', 'UP', 'LEFT', 'RIGHT']
 
   i = 0
   how_to_two.each do |c|
-    @labels << [Constants::WIDTH - 500, Constants::HEIGHT - 35 * i - 250, c, 20, 1, 50, 50, 50, 255, Resources::FONT ]
+    @labels << [Constants::WIDTH - 500, Constants::HEIGHT - 35 * i - 250, c, 20, 1, 50, 50, 50, 255, Resources::FONT]
     i += 1
   end
 
-  if @input.keyboard.key_down.space
-    @game_state = State::PLAYING
-  end
+  @game_state = State::PLAYING if @input.keyboard.key_down.space
 end
 
 def draw_grass
   ground_scale = 4
   (-4..8).each do |i|
-    @sprites << [i * 64 * ground_scale + cam_offset_x, cam_offset_y, 64 * ground_scale, 64 * ground_scale, Resources::SPR_GROUND]
+    @sprites << [i * 64 * ground_scale + cam_offset_x, cam_offset_y, 64 * ground_scale, 64 * ground_scale,
+                 Resources::SPR_GROUND]
   end
 end
 
 def scene_menu
   squirrel_scale = 6
   text_scale = 6
-  sin_scale = Math.sin(@ticks/10) * 15
+  sin_scale = Math.sin(@ticks / 10) * 15
   @sprites << [576, -60, 64 * squirrel_scale, 64 * squirrel_scale, Resources::SPR_SQUIRREL_FRONT]
   @sprites << [300, 120, 64 * text_scale + sin_scale, 64 * text_scale + sin_scale, Resources::SPR_MENU]
 
   draw_grass
 
-  credits = ['A GGJ22 game (remake) by:','Kerstin','Laurin','Lea','Marcel']
+  credits = ['A GGJ22 game (remake) by:', 'Kerstin', 'Laurin', 'Lea', 'Marcel']
 
   i = 0
   credits.each do |c|
-    @labels << [Constants::WIDTH - 40, Constants::HEIGHT - 35 * i, c, 20, 2, 50, 50, 50, 255, Resources::FONT ]
+    @labels << [Constants::WIDTH - 40, Constants::HEIGHT - 35 * i, c, 20, 2, 50, 50, 50, 255, Resources::FONT]
     i += 1
   end
 
-  @labels << [40, Constants::HEIGHT, 'PRESS SPACE TO START', 20, 0, 50, 50, 50, 255, Resources::FONT ]
+  @labels << [40, Constants::HEIGHT, 'PRESS SPACE TO START', 20, 0, 50, 50, 50, 255, Resources::FONT]
 
-  #input
+  # input
 
-  if @input.keyboard.key_down.space
-    @game_state = State::HOW_TO
-  end
+  @game_state = State::HOW_TO if @input.keyboard.key_down.space
 end
 
 def cam_follow_player
@@ -254,30 +251,26 @@ def cam_follow_player
 end
 
 def limit
-  if @camera.y < Constants::HEIGHT/2
-    @camera.y = Constants::HEIGHT/2
-  end
+  @camera.y = Constants::HEIGHT / 2 if @camera.y < Constants::HEIGHT / 2
 end
 
 def scene_playing
-
   # @🐿.test_move
   @🐿.hand_move
   @🐿.update_physics
-  if @condition_state == Condition::DEFAULT
-    cam_follow_player
-  end
+  cam_follow_player if @condition_state == Condition::DEFAULT
   limit
 
   # draw tree crown
-  (-1..Constants::TREE_WIDTH/2).each do |x|
+  (-1..Constants::TREE_WIDTH / 2).each do |x|
     y = Constants::TREE_HEIGHT
     crown_x = x * Constants::TILE_SIZE_CROWN + mid_offset + cam_offset_x
     crown_y = y * Constants::TILE_SIZE + cam_offset_y
     sprite_num = Resources::SPR_CROWN_MID
-    if x == -1
+    case x
+    when -1
       sprite_num = Resources::SPR_CROWN_LEFT
-    elsif x == Constants::TREE_WIDTH/2
+    when Constants::TREE_WIDTH / 2
       sprite_num = Resources::SPR_CROWN_RIGHT
     end
     @sprites << {
@@ -291,11 +284,6 @@ def scene_playing
       source_w: Constants::TILE_SIZE,
       source_h: Constants::TILE_SIZE
     }
-    #@sprites << [crown_x,
-    #             crown_y,
-    #             Constants::TILE_SIZE,
-    #             Constants::TILE_SIZE,
-    #             sprite]
   end
 
   # draw tree ( and btw. check for holes :D )
@@ -308,45 +296,42 @@ def scene_playing
         y: tree_y,
         w: Constants::TILE_SIZE,
         h: Constants::TILE_SIZE,
-        path:  Resources::SPR_SHEET,
+        path: Resources::SPR_SHEET,
         source_x: @🌳[x][y] * Constants::TILE_SIZE,
         source_y: 0,
         source_w: Constants::TILE_SIZE,
         source_h: Constants::TILE_SIZE
       }
 
-      if @🌳[x][y] == Tiles::BARK_HOLE
-        # midpoint
-        tree_x += Constants::TILE_SIZE/2
-        tree_y += Constants::TILE_SIZE/2
+      next unless @🌳[x][y] == Tiles::BARK_HOLE
 
-        left_x, left_y = @🐿.get_hand_left
-        # midpoint
-        left_x += Constants::SQUIRREL_SIZE * 6
-        left_y += Constants::SQUIRREL_SIZE * 6
+      # midpoint
+      tree_x += Constants::TILE_SIZE / 2
+      tree_y += Constants::TILE_SIZE / 2
 
-        dist_l = Math.sqrt((tree_x-left_x)**2 + (tree_y-left_y)**2)
+      left_x, left_y = @🐿.get_hand_left
+      # midpoint
+      left_x += Constants::SQUIRREL_SIZE * 6
+      left_y += Constants::SQUIRREL_SIZE * 6
 
-        right_x, right_y = @🐿.get_hand_right
-        # midpoint
-        right_x += Constants::SQUIRREL_SIZE * 6
-        right_y += Constants::SQUIRREL_SIZE * 6
-        dist_r = Math.sqrt((tree_x-right_x)**2 + (tree_y-right_y)**2)
+      dist_l = Math.sqrt((tree_x - left_x)**2 + (tree_y - left_y)**2)
 
-        if dist_l < Constants::TILE_SIZE/2
-          @🐿.found_hole_left
-        end
+      right_x, right_y = @🐿.get_hand_right
+      # midpoint
+      right_x += Constants::SQUIRREL_SIZE * 6
+      right_y += Constants::SQUIRREL_SIZE * 6
+      dist_r = Math.sqrt((tree_x - right_x)**2 + (tree_y - right_y)**2)
 
-        if dist_r < Constants::TILE_SIZE/2
-          @🐿.found_hole_right
-        end
-      end
+      @🐿.found_hole_left if dist_l < Constants::TILE_SIZE / 2
+
+      @🐿.found_hole_right if dist_r < Constants::TILE_SIZE / 2
     end
   end
 
   restart_text = 'Restart with BACKSPACE'
-  @labels << [20 + cam_offset_x, 200 + cam_offset_y, restart_text, 15, 0, 50, 50, 50, 255, Resources::FONT ]
-  @labels << [20 + cam_offset_x, 200 + cam_offset_y + Constants::TREE_HEIGHT * Constants::TILE_SIZE, restart_text, 15, 0, 50, 50, 50, 255, Resources::FONT ]
+  @labels << [20 + cam_offset_x, 200 + cam_offset_y, restart_text, 15, 0, 50, 50, 50, 255, Resources::FONT]
+  @labels << [20 + cam_offset_x, 200 + cam_offset_y + Constants::TREE_HEIGHT * Constants::TILE_SIZE, restart_text, 15,
+              0, 50, 50, 50, 255, Resources::FONT]
 
   @🐿.draw
 
@@ -354,9 +339,7 @@ def scene_playing
 
   draw_clouds
 
-  if @🐿.y > (Constants::TREE_HEIGHT-1) * Constants::TILE_SIZE
-    @condition_state = Condition::WIN
-  end
+  @condition_state = Condition::WIN if @🐿.y > (Constants::TREE_HEIGHT - 1) * Constants::TILE_SIZE
 
   case @condition_state
   when Condition::WIN
@@ -364,7 +347,7 @@ def scene_playing
     #  @played_sound = true
     #  @args.outputs.sounds << Resources::SND_WIN
     # end
-    crown_x = (Constants::TREE_WIDTH * Constants::TILE_SIZE)/2 + mid_offset + cam_offset_x - Constants::TILE_SIZE*2
+    crown_x = (Constants::TREE_WIDTH * Constants::TILE_SIZE) / 2 + mid_offset + cam_offset_x - Constants::TILE_SIZE * 2
     crown_y = Constants::TREE_HEIGHT * Constants::TILE_SIZE + cam_offset_y
     @sprites << [crown_x,
                  crown_y,
