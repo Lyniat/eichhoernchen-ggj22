@@ -1,4 +1,5 @@
 # Das Eichhörnchen (The Squirrel)
+[PLAY!](https://lyniat.github.io/eichhoernchen-ggj22/)
 
 ### Summary
 This game is a remake of a Global Game Jam 22 game.
