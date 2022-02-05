@@ -6,6 +6,12 @@ class State
   PLAYING = 2
 end
 
+class Condition
+  DEFAULT = 0
+  WIN = 1
+  GAME_OVER = 2
+end
+
 class Resources
   SPR_MENU = 'sprites/titel_2.png'
   SPR_SQUIRREL_FRONT = 'sprites/squirrel_front.png'
@@ -16,6 +22,8 @@ class Resources
   SPR_CROWN_MID = 'sprites/crown_mid.png'
   SPR_CROWN_RIGHT = 'sprites/crown_right.png'
   SPR_CLOUD = 'sprites/cloud.png'
+  SPR_GAME_OVER = 'sprites/game_over.png'
+  SPR_WIN = 'sprites/win.png'
   FONT = 'fonts/shpinscher.ttf'
   SND_HIT = 'sounds/hit_'
   SND_NO = 'sounds/no_'
@@ -120,6 +128,7 @@ def reset
   @☁️ = nil
 
   @game_state ||= State::MENU
+  @condition_state ||= Condition::DEFAULT
 end
 
 def tick args
@@ -150,6 +159,7 @@ def tick args
   @☁️ ||= create_clouds
 
   @game_state ||= State::MENU
+  @condition_state ||= Condition::DEFAULT
 
   case @game_state
   when State::MENU
@@ -252,7 +262,9 @@ def scene_playing
   # @🐿.test_move
   @🐿.hand_move
   @🐿.update_physics
-  cam_follow_player
+  if @condition_state == Condition::DEFAULT
+    cam_follow_player
+  end
   limit
 
   # draw tree crown
@@ -318,6 +330,21 @@ def scene_playing
   draw_grass
 
   draw_clouds
+
+  if @🐿.y > (Constants::TREE_HEIGHT-1) * Constants::TILE_SIZE
+    @condition_state = Condition::WIN
+  end
+
+  case @condition_state
+  when Condition::WIN
+    crown_x = (Constants::TREE_WIDTH * Constants::TILE_SIZE)/2 + mid_offset + cam_offset_x - Constants::TILE_SIZE*2
+    crown_y = Constants::TREE_HEIGHT * Constants::TILE_SIZE + cam_offset_y
+    @sprites << [crown_x,
+                 crown_y,
+                 Constants::TILE_SIZE * 4,
+                 Constants::TILE_SIZE * 4,
+                 Resources::SPR_WIN]
+  end
 end
 
 def draw_clouds
