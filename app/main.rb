@@ -30,7 +30,6 @@ class Resources
   FONT = 'fonts/shpinscher.ttf'
   SND_HIT = 'sounds/hit_'
   SND_NO = 'sounds/no_'
-  SND_WIN = 'sounds/win.wav'
   MUSIC = 'sounds/music.ogg'
 end
 
@@ -132,7 +131,6 @@ def reset
 
   @game_state = State::PLAYING
   @condition_state = Condition::DEFAULT
-  @played_sound = false
 end
 
 def tick(args)
@@ -164,7 +162,6 @@ def tick(args)
 
   @game_state ||= State::MENU
   @condition_state ||= Condition::DEFAULT
-  @played_sound ||= false
 
   case @game_state
   when State::MENU
@@ -199,6 +196,10 @@ def scene_how_to
     @labels << [Constants::WIDTH - 500, Constants::HEIGHT - 35 * i - 250, c, 20, 1, 50, 50, 50, 255, Resources::FONT]
     i += 1
   end
+
+  only_one = 'Or try it alone if you are tough enough!'
+
+  @labels << [Constants::WIDTH / 2, 200, only_one, 20, 1, 50, 50, 50, 255, Resources::FONT]
 
   @game_state = State::PLAYING if @input.keyboard.key_down.space
 end
@@ -343,10 +344,6 @@ def scene_playing
 
   case @condition_state
   when Condition::WIN
-    # if !@played_sound
-    #  @played_sound = true
-    #  @args.outputs.sounds << Resources::SND_WIN
-    # end
     crown_x = (Constants::TREE_WIDTH * Constants::TILE_SIZE) / 2 + mid_offset + cam_offset_x - Constants::TILE_SIZE * 2
     crown_y = Constants::TREE_HEIGHT * Constants::TILE_SIZE + cam_offset_y
     @sprites << [crown_x,
