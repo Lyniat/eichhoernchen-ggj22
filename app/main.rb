@@ -13,6 +13,7 @@ class Condition
 end
 
 class Resources
+  SPR_SHEET = 'sprites/sheet.png'
   SPR_MENU = 'sprites/titel_2.png'
   SPR_SQUIRREL_FRONT = 'sprites/squirrel_front.png'
   SPR_GROUND = 'sprites/ground.png'
@@ -27,6 +28,7 @@ class Resources
   FONT = 'fonts/shpinscher.ttf'
   SND_HIT = 'sounds/hit_'
   SND_NO = 'sounds/no_'
+  SND_WIN = 'sounds/win.wav'
   MUSIC = 'sounds/music.ogg'
 end
 
@@ -51,10 +53,6 @@ class Tiles
   BARK = 1
   BARK_HOLE = 2
   BARK_RIGHT = 3
-end
-
-def get_bark_spr(id)
-  "sprites/bark_#{id}.png"
 end
 
 def get_bark(x,y)
@@ -129,6 +127,7 @@ def reset
 
   @game_state ||= State::MENU
   @condition_state ||= Condition::DEFAULT
+  @played_sound = false
 end
 
 def tick args
@@ -160,6 +159,7 @@ def tick args
 
   @game_state ||= State::MENU
   @condition_state ||= Condition::DEFAULT
+  @played_sound ||= false
 
   case @game_state
   when State::MENU
@@ -219,7 +219,7 @@ def scene_menu
 
   draw_grass
 
-  credits = ['A GGJ22 game by:','Kerstin','Laurin','Lea','Marcel']
+  credits = ['A GGJ22 game (remake) by:','Kerstin','Laurin','Lea','Marcel']
 
   i = 0
   credits.each do |c|
@@ -290,11 +290,17 @@ def scene_playing
     (0...Constants::TREE_HEIGHT).each do |y|
       tree_x = x * Constants::TILE_SIZE + mid_offset + cam_offset_x
       tree_y = y * Constants::TILE_SIZE + cam_offset_y
-      @sprites << [tree_x,
-                   tree_y,
-                   Constants::TILE_SIZE,
-                   Constants::TILE_SIZE,
-                   get_bark_spr(@🌳[x][y])]
+      @sprites << {
+        x: tree_x,
+        y: tree_y,
+        w: Constants::TILE_SIZE,
+        h: Constants::TILE_SIZE,
+        path:  Resources::SPR_SHEET,
+        source_x: @🌳[x][y] * Constants::TILE_SIZE,
+        source_y: 0,
+        source_w: Constants::TILE_SIZE,
+        source_h: Constants::TILE_SIZE
+      }
 
       if @🌳[x][y] == Tiles::BARK_HOLE
         # midpoint
@@ -337,6 +343,10 @@ def scene_playing
 
   case @condition_state
   when Condition::WIN
+    # if !@played_sound
+    #  @played_sound = true
+    #  @args.outputs.sounds << Resources::SND_WIN
+    # end
     crown_x = (Constants::TREE_WIDTH * Constants::TILE_SIZE)/2 + mid_offset + cam_offset_x - Constants::TILE_SIZE*2
     crown_y = Constants::TREE_HEIGHT * Constants::TILE_SIZE + cam_offset_y
     @sprites << [crown_x,
