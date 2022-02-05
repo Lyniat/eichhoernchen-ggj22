@@ -19,9 +19,9 @@ class Resources
   SPR_GROUND = 'sprites/ground.png'
   SPR_SQUIRREL = 'sprites/squirrel.png'
   SPR_HAND = 'sprites/hand.png'
-  SPR_CROWN_LEFT = 'sprites/crown_left.png'
-  SPR_CROWN_MID = 'sprites/crown_mid.png'
-  SPR_CROWN_RIGHT = 'sprites/crown_right.png'
+  SPR_CROWN_LEFT = 5
+  SPR_CROWN_MID = 6
+  SPR_CROWN_RIGHT = 7
   SPR_CLOUD = 'sprites/cloud.png'
   SPR_GAME_OVER = 'sprites/game_over.png'
   SPR_WIN = 'sprites/win.png'
@@ -39,6 +39,7 @@ class Constants
   TREE_WIDTH = 12
   TREE_HEIGHT = 60
   TILE_SIZE = 64
+  TILE_SIZE_CROWN = 128
   DEG_RAD = (3.14159265359 * 2) / 360
   RAD = 30
   GRAVITY = 9.81
@@ -124,9 +125,10 @@ def reset
   @🌳 = nil
   @🐿 = nil
   @☁️ = nil
+  @camera = nil
 
-  @game_state ||= State::MENU
-  @condition_state ||= Condition::DEFAULT
+  @game_state = State::PLAYING
+  @condition_state = Condition::DEFAULT
   @played_sound = false
 end
 
@@ -268,21 +270,32 @@ def scene_playing
   limit
 
   # draw tree crown
-  (-1..Constants::TREE_WIDTH).each do |x|
+  (-1..Constants::TREE_WIDTH/2).each do |x|
     y = Constants::TREE_HEIGHT
-    crown_x = x * Constants::TILE_SIZE + mid_offset + cam_offset_x
+    crown_x = x * Constants::TILE_SIZE_CROWN + mid_offset + cam_offset_x
     crown_y = y * Constants::TILE_SIZE + cam_offset_y
-    sprite = Resources::SPR_CROWN_MID
+    sprite_num = Resources::SPR_CROWN_MID
     if x == -1
-      sprite = Resources::SPR_CROWN_LEFT
-    elsif x == Constants::TREE_WIDTH
-      sprite = Resources::SPR_CROWN_RIGHT
+      sprite_num = Resources::SPR_CROWN_LEFT
+    elsif x == Constants::TREE_WIDTH/2
+      sprite_num = Resources::SPR_CROWN_RIGHT
     end
-    @sprites << [crown_x,
-                 crown_y,
-                 Constants::TILE_SIZE,
-                 Constants::TILE_SIZE,
-                 sprite]
+    @sprites << {
+      x: crown_x,
+      y: crown_y,
+      w: Constants::TILE_SIZE_CROWN,
+      h: Constants::TILE_SIZE_CROWN,
+      path: Resources::SPR_SHEET,
+      source_x: sprite_num * Constants::TILE_SIZE,
+      source_y: 0,
+      source_w: Constants::TILE_SIZE,
+      source_h: Constants::TILE_SIZE
+    }
+    #@sprites << [crown_x,
+    #             crown_y,
+    #             Constants::TILE_SIZE,
+    #             Constants::TILE_SIZE,
+    #             sprite]
   end
 
   # draw tree ( and btw. check for holes :D )
@@ -330,6 +343,10 @@ def scene_playing
       end
     end
   end
+
+  restart_text = 'Restart with BACKSPACE'
+  @labels << [20 + cam_offset_x, 200 + cam_offset_y, restart_text, 15, 0, 50, 50, 50, 255, Resources::FONT ]
+  @labels << [20 + cam_offset_x, 200 + cam_offset_y + Constants::TREE_HEIGHT * Constants::TILE_SIZE, restart_text, 15, 0, 50, 50, 50, 255, Resources::FONT ]
 
   @🐿.draw
 
