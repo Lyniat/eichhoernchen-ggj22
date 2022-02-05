@@ -12,6 +12,9 @@ class Resources
   SPR_GROUND = 'sprites/ground.png'
   SPR_SQUIRREL = 'sprites/squirrel.png'
   SPR_HAND = 'sprites/hand.png'
+  SPR_CROWN_LEFT = 'sprites/crown_left.png'
+  SPR_CROWN_MID = 'sprites/crown_mid.png'
+  SPR_CROWN_RIGHT = 'sprites/crown_right.png'
   FONT = 'fonts/shpinscher.ttf'
   SND_HIT = 'sounds/hit_'
   SND_NO = 'sounds/no_'
@@ -31,6 +34,7 @@ class Constants
   MAX_SPEED = 20
   MAX_ARM_LENGTH = 7.5
   ARM_SPEED = 0.5
+  EASY_MODE = true # TODO: Remove this for publishing
 end
 
 class Tiles
@@ -47,7 +51,7 @@ end
 def get_bark(x,y)
   is_sin = (Math.sin(y/3) * Constants::TREE_WIDTH/4 + Constants::TREE_WIDTH/2).round == x
   is_mod = y % 2 == 1
-  is_rnd = Random.rand(y+1) == 1
+  is_rnd = Constants::EASY_MODE ? Random.rand(5) == 1 : Random.rand(y+1) == 1
   (is_sin && is_mod) || is_rnd ? Tiles::BARK_HOLE : Tiles::BARK
 end
 
@@ -221,6 +225,25 @@ def scene_playing
   limit
 
   mid_offset = Constants::WIDTH / 2 - (Constants::TREE_WIDTH * Constants::TILE_SIZE) / 2
+
+  # draw tree crown
+  (-1..Constants::TREE_WIDTH).each do |x|
+    y = Constants::TREE_HEIGHT
+    crown_x = x * Constants::TILE_SIZE + mid_offset + cam_offset_x
+    crown_y = y * Constants::TILE_SIZE + cam_offset_y
+    sprite = Resources::SPR_CROWN_MID
+    if x == -1
+      sprite = Resources::SPR_CROWN_LEFT
+    elsif x == Constants::TREE_WIDTH
+      sprite = Resources::SPR_CROWN_RIGHT
+    end
+    @sprites << [crown_x,
+                 crown_y,
+                 Constants::TILE_SIZE,
+                 Constants::TILE_SIZE,
+                 sprite]
+  end
+
   # draw tree ( and btw. check for holes :D )
   (0...Constants::TREE_WIDTH).each do |x|
     (0...Constants::TREE_HEIGHT).each do |y|
