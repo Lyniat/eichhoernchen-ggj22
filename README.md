@@ -8,8 +8,6 @@ The original game was coded in Unity but this remake was done with [DragonRuby G
 ### License
 by:
 - [lyniat](https://github.com/Lyniat)
-- [WauWauGirly](https://github.com/WauWauGirly)
-- [Marcel-K1](https://github.com/Marcel-K1)
-- [Ebcill](https://github.com/Ebcill)
+- [WauWauGirly](https://github.com/Streifbert)
 
 [Attribution-NonCommercial-ShareAlike 4.0 International (CC BY-NC-SA 4.0)](https://creativecommons.org/licenses/by-nc-sa/4.0/)

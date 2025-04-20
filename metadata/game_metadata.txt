@@ -2,7 +2,7 @@ devid=lyniat
 devtitle=lyniat
 gameid=squirrel
 gametitle=Das Eichhörnchen
-version=0.1
+version=0.2
 icon=metadata/icon.png
 
 # Uncomment the entry below to bytecode compile your Ruby code (Pro License Only)
@@ -10,3 +10,15 @@ compile_ruby=true
 
 # Uncomment the entry below to specify the package name for your APK (Pro License Only)
 #packageid=org.dev.gamename
+
+# === HD Mode ===
+# HD Mode: when enabled, will give you 720p, 1080p, 1440p, 4k, and 5k rendering options
+# Check out the following YouTube Video for a demo of DragonRuby's HD Capabilities
+# https://youtu.be/Rnc6z84zaa4
+hd=true
+
+# === High DPI ===
+# Setting this property to true will enable High DPI rendering (try in combination with scale_quality to see what looks best)
+highdpi=true
+
+ignore_directories=unused

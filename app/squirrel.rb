@@ -1,10 +1,8 @@
-# frozen_string_literal: true
-
 class Squirrel
   attr_reader :x, :y
 
   def initialize(args, cam, 🌳, x, y, size)
-    @sprites = args.outputs.sprites
+    @sprites = args.outputs.primitives
     @lines = args.outputs.lines
     @args = args
     @camera = cam
@@ -53,7 +51,13 @@ class Squirrel
     @y_pos = @y + offset_y
     draw_hand_left(-15)
     draw_hand_right(65)
-    @sprites << [@x_pos, @y_pos, 38 * @size, 40 * @size, Resources::SPR_SQUIRREL]
+    @sprites << {
+      x: @x_pos,
+      y: @y_pos,
+      w: 38 * @size,
+      h: 40 * @size,
+      path: Resources::SPR_SQUIRREL,
+    }
   end
 
   def get_rot(rot)
@@ -65,14 +69,28 @@ class Squirrel
     ang_x, ang_y = get_rot(@rot_left)
     @hand_left_pos_x = @x_pos + x + ang_x * @left_arm_length
     @hand_left_pos_y = @y_pos + 80 + ang_y * @left_arm_length
-    @sprites << [@hand_left_pos_x, @hand_left_pos_y, 9 * @size * 2, 6 * @size * 2, Resources::SPR_HAND, -@rot_left]
+    @sprites << {
+      x: @hand_left_pos_x,
+      y: @hand_left_pos_y,
+      w: 9 * @size * 2,
+      h: 6 * @size * 2,
+      path: Resources::SPR_HAND,
+      angle: -@rot_left,
+    }
   end
 
   def draw_hand_right(x)
     ang_x, ang_y = get_rot(@rot_right)
     @hand_right_pos_x = @x_pos + x + ang_x * @right_arm_length
     @hand_right_pos_y = @y_pos + 80 + ang_y * @right_arm_length
-    @sprites << [@hand_right_pos_x, @hand_right_pos_y, 9 * @size * 2, 6 * @size * 2, Resources::SPR_HAND, -@rot_right]
+    @sprites << {
+      x: @hand_right_pos_x,
+      y: @hand_right_pos_y,
+      w: 9 * @size * 2,
+      h: 6 * @size * 2,
+      path: Resources::SPR_HAND,
+      angle: -@rot_right,
+    }
   end
 
   # unnecessary

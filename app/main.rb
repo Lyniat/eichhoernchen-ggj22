@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 require 'app/squirrel.rb'
 
 class State
@@ -125,6 +123,7 @@ end
 
 def reset
   @🌳 = nil
+  @🌳🖼️ = nil
   @🐿 = nil
   @☁️ = nil
   @camera = nil
@@ -151,7 +150,7 @@ def tick(args)
 
   @args = args
   @out = args.outputs
-  @sprites = args.outputs.sprites
+  @sprites = args.outputs.primitives
   @ticks = args.state.tick_count
   @labels = args.outputs.labels
   @input = args.inputs
@@ -159,6 +158,7 @@ def tick(args)
   @🌳 ||= create_tree
   @🐿 ||= Squirrel.new(@args, @camera, @🌳, Constants::WIDTH / 2, Constants::HEIGHT / 2, Constants::SQUIRREL_SIZE)
   @☁️ ||= create_clouds
+  @🌳🖼️ ||= draw_tree_to_rt
 
   @game_state ||= State::MENU
   @condition_state ||= Condition::DEFAULT
@@ -207,8 +207,13 @@ end
 def draw_grass
   ground_scale = 4
   (-4..8).each do |i|
-    @sprites << [i * 64 * ground_scale + cam_offset_x, cam_offset_y, 64 * ground_scale, 64 * ground_scale,
-                 Resources::SPR_GROUND]
+    @sprites << {
+      x: i * 64 * ground_scale + cam_offset_x,
+      y: cam_offset_y,
+      w: 64 * ground_scale,
+      h: 64 * ground_scale,
+      path: Resources::SPR_GROUND
+    }
   end
 end
 
@@ -216,8 +221,22 @@ def scene_menu
   squirrel_scale = 6
   text_scale = 6
   sin_scale = Math.sin(@ticks / 10) * 15
-  @sprites << [576, -60, 64 * squirrel_scale, 64 * squirrel_scale, Resources::SPR_SQUIRREL_FRONT]
-  @sprites << [300, 120, 64 * text_scale + sin_scale, 64 * text_scale + sin_scale, Resources::SPR_MENU]
+
+  @sprites << {
+    x: 576,
+    y: -60,
+    w: 64 * squirrel_scale,
+    h: 64 * squirrel_scale,
+    path: Resources::SPR_SQUIRREL_FRONT,
+  }
+
+  @sprites << {
+    x: 300,
+    y: 120,
+    w: 64 * text_scale + sin_scale,
+    h: 64 * text_scale + sin_scale,
+    path: Resources::SPR_MENU,
+  }
 
   draw_grass
 
@@ -230,8 +249,6 @@ def scene_menu
   end
 
   @labels << [40, Constants::HEIGHT, 'PRESS SPACE TO START', 20, 0, 50, 50, 50, 255, Resources::FONT]
-
-  # input
 
   @game_state = State::HOW_TO if @input.keyboard.key_down.space
 end
@@ -262,6 +279,8 @@ def scene_playing
   cam_follow_player if @condition_state == Condition::DEFAULT
   limit
 
+  draw_tree
+
   # draw tree crown
   (-1..Constants::TREE_WIDTH / 2).each do |x|
     y = Constants::TREE_HEIGHT
@@ -283,16 +302,79 @@ def scene_playing
       source_x: sprite_num * Constants::TILE_SIZE,
       source_y: 0,
       source_w: Constants::TILE_SIZE,
-      source_h: Constants::TILE_SIZE
+      source_h: Constants::TILE_SIZE,
     }
   end
 
+  @sprites << {
+    x: 0,
+    y: 0,
+    w: @🌳🖼️.w,
+    h: @🌳🖼️.h,
+    path: :tree_sprite,
+  }
+
+  restart_text = 'Restart with BACKSPACE'
+  @labels << [20 + cam_offset_x, 200 + cam_offset_y, restart_text, 15, 0, 50, 50, 50, 255, Resources::FONT]
+  @labels << [20 + cam_offset_x, 200 + cam_offset_y + Constants::TREE_HEIGHT * Constants::TILE_SIZE, restart_text, 15,
+              0, 50, 50, 50, 255, Resources::FONT]
+
+  @🐿.draw
+
+  draw_grass
+
+  draw_clouds
+
+  @condition_state = Condition::WIN if @🐿.y > (Constants::TREE_HEIGHT - 1) * Constants::TILE_SIZE
+
+  case @condition_state
+  when Condition::WIN
+    crown_x = (Constants::TREE_WIDTH * Constants::TILE_SIZE) / 2 + mid_offset + cam_offset_x - Constants::TILE_SIZE * 2
+    crown_y = Constants::TREE_HEIGHT * Constants::TILE_SIZE + cam_offset_y
+    @sprites << {
+      x: crown_x,
+      y: crown_y,
+      w: Constants::TILE_SIZE * 4,
+      h: Constants::TILE_SIZE * 4,
+      path: Resources::SPR_WIN,
+    }
+  end
+end
+
+def draw_tree_to_rt
   # draw tree ( and btw. check for holes :D )
   (0...Constants::TREE_WIDTH).each do |x|
     (0...Constants::TREE_HEIGHT).each do |y|
       tree_x = x * Constants::TILE_SIZE + mid_offset + cam_offset_x
       tree_y = y * Constants::TILE_SIZE + cam_offset_y
-      @sprites << {
+      @args.outputs[:tree_sprite].primitives << {
+        x: tree_x,
+        y: tree_y,
+        w: Constants::TILE_SIZE,
+        h: Constants::TILE_SIZE,
+        path: Resources::SPR_SHEET,
+        source_x: @🌳[x][y] * Constants::TILE_SIZE,
+        source_y: 0,
+        source_w: Constants::TILE_SIZE,
+        source_h: Constants::TILE_SIZE
+      }
+    end
+  end
+
+  tree_rt = @args.outputs[:tree_sprite]
+  {
+    w: tree_rt.w,
+    h: tree_rt.h,
+  }
+end
+
+def draw_tree
+  # draw tree ( and btw. check for holes :D )
+  (0...Constants::TREE_WIDTH).each do |x|
+    (0...Constants::TREE_HEIGHT).each do |y|
+      tree_x = x * Constants::TILE_SIZE + mid_offset + cam_offset_x
+      tree_y = y * Constants::TILE_SIZE + cam_offset_y
+      @args.outputs[:tree_sprite].primitives << {
         x: tree_x,
         y: tree_y,
         w: Constants::TILE_SIZE,
@@ -328,40 +410,19 @@ def scene_playing
       @🐿.found_hole_right if dist_r < Constants::TILE_SIZE / 2
     end
   end
-
-  restart_text = 'Restart with BACKSPACE'
-  @labels << [20 + cam_offset_x, 200 + cam_offset_y, restart_text, 15, 0, 50, 50, 50, 255, Resources::FONT]
-  @labels << [20 + cam_offset_x, 200 + cam_offset_y + Constants::TREE_HEIGHT * Constants::TILE_SIZE, restart_text, 15,
-              0, 50, 50, 50, 255, Resources::FONT]
-
-  @🐿.draw
-
-  draw_grass
-
-  draw_clouds
-
-  @condition_state = Condition::WIN if @🐿.y > (Constants::TREE_HEIGHT - 1) * Constants::TILE_SIZE
-
-  case @condition_state
-  when Condition::WIN
-    crown_x = (Constants::TREE_WIDTH * Constants::TILE_SIZE) / 2 + mid_offset + cam_offset_x - Constants::TILE_SIZE * 2
-    crown_y = Constants::TREE_HEIGHT * Constants::TILE_SIZE + cam_offset_y
-    @sprites << [crown_x,
-                 crown_y,
-                 Constants::TILE_SIZE * 4,
-                 Constants::TILE_SIZE * 4,
-                 Resources::SPR_WIN]
-  end
 end
 
 def draw_clouds
   @☁️.each do |c|
     cloud_x = c.x * Constants::TILE_SIZE + mid_offset + cam_offset_x
     cloud_y = c.y * Constants::TILE_SIZE + cam_offset_y
-    @sprites << [cloud_x,
-                 cloud_y,
-                 Constants::TILE_SIZE * 4,
-                 Constants::TILE_SIZE * 4,
-                 Resources::SPR_CLOUD]
+
+    @sprites << {
+      x: cloud_x,
+      y: cloud_y,
+      w: Constants::TILE_SIZE * 4,
+      h: Constants::TILE_SIZE * 4,
+      path: Resources::SPR_CLOUD
+    }
   end
 end
